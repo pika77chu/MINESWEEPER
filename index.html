@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Minesweeper</title>
+        <style>
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: radial-gradient(circle at top, #1f2937, #0b0f19);
+    font-family: system-ui, -apple-system, sans-serif;
+    color: #e5e7eb;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.appframe {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+h1 {
+    margin: 0;
+    padding: 12px;
+    text-align: center;
+    font-size: 22px;
+    letter-spacing: 3px;
+    background: linear-gradient(90deg, #111827, #1f2937);
+    border-bottom: 1px solid #374151;
+    text-shadow: 0 0 10px rgba(96,165,250,0.5);
+}
+#buttons {
+    padding: 8px;
+    text-align: center;
+}
+button {
+    background: linear-gradient(145deg, #3b82f6, #1d4ed8);
+    border: none;
+    color: white;
+    padding: 10px 14px;
+    margin: 4px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+}
+button:active {
+    transform: scale(0.95);
+}
+#board {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+table {
+    border-collapse: collapse;
+    background: #0b1220;
+    box-shadow: 0 0 30px rgba(0,0,0,0.7);
+    border: 2px solid #374151;
+}
+td {
+    width: calc(min(9vw, 38px));
+    height: calc(min(9vw, 38px));
+    border: 1px solid #1f2937;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: bold;
+    font-size: 16px;
+    user-select: none;
+    transition: 0.1s;
+    background: #111827;
+    cursor: pointer;
+}
+td:active {
+    transform: scale(0.95);
+}
+td.open {
+    background: #e5e7eb;
+    color: #111827;
+}
+.flag::before {
+    content: "🚩";
+}
+.mine {
+    background: #ef4444 !important;
+    color: white;
+}
+.center-message {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    font-weight: bold;
+    color: #60a5fa;
+    text-shadow: 0 0 20px black;
+    pointer-events: none;
+}
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 auto;
+    max-width: 500px;
+}
+li {
+    background: #111827;
+    margin: 6px auto;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid #1f2937;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+}
+.on {
+    outline: 2px solid #60a5fa;
+    box-shadow: 0 0 12px rgba(96,165,250,0.6);
+    transform: scale(1.03);
+}
+input {
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #374151;
+    background: #0b1220;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    width: 70%;
+}
+input:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 10px rgba(96,165,250,0.4);
+}
+@media (max-width: 600px) {
+    h1 {
+        font-size: 18px;
+        padding: 10px;
+    }
+    button {
+        width: 90%;
+        font-size: 16px;
+    }
+    td {
+        width: calc(min(10vw, 36px));
+        height: calc(min(10vw, 36px));
+        font-size: 14px;
+    }
+    .center-message {
+        font-size: 24px;
+    }
+}
+        </style>
+    </head>
+    <body>
+        <div class="appframe">
+            <h1>MINESWEEPER</h1>
+            <div id="buttons">
+                <p><button onclick="start(2)">Ranking</button></p>
+                <p><button onclick="start(3)">Easy</button></p>
+                <p><button onclick="start(4)">Normal</button></p>
+                <p><button onclick="start(5)">Hard</button></p>
+            </div>
+            <div id="board"></div>
+        </div>
+        <script>
+            const boards = document.getElementById("board");
+            const buttons = document.getElementById("buttons");
+            let difficult = 0;
+            let side = 9;
+            let mine = 10;
+            let mode = "open";
+            let mines = [];
+            let flags = [];
+            let opens = [];
+            let timerID;
+            let time = 0;
+            let hour = 0;
+            let min = 0;
+            let sec = 0;
+            let ended = false;
+            let score = 0;
+            let name = "";
+
+            function start(sum) {
+                if (sum === 0) {
+                    clearInterval(timerID);
+                    boards.innerHTML = ``;
+                    buttons.innerHTML = `<p><button onclick="start(2)">Ranking</button>
+                    <p><button onclick="start(3)">Easy</button></p>
+                    <p><button onclick="start(4)">Normal</button></p>
+                    <p><button onclick="start(5)">Hard</button></p>`;
+                }else if (sum >= 3) {
+                    difficult = sum;
+                    ended = false;
+                    score = 0;
+                    side = sum === 3? 9 : sum === 4? 16 : 30;
+                    mine = sum === 3? 10 : sum === 4? 40 : 99;
+                    mode = "open";
+                    let html = `<table>`;
+                    for (let i = 0; i < side; i++) {
+                        html += `<tr>`;
+                        for (let j = 0; j < side; j++) {
+                            html += `<td id="${i*side+j}" onclick="setUpClickEvents(${i*side+j})"></td>`;
+                        }
+                        html += `</tr>`;
+                    }
+                    html += `</table>`;
+                    document.getElementById("board").innerHTML = html+`<div id="centerMessage" class="center-message"></div>`;
+                    document.getElementById("buttons").innerHTML = `<button onclick="start(0)">Stop</button>
+                    <p>Time: <span id="hour">0</span>:<span id="min">0</span>:<span id="sec">0</span>
+                    Mine: ${mine}</p><p><button id="btnopen" class="on" onclick="setopen()">Open</button> 
+                    <button id="btnflag" onclick="setflag()">Flag</button></p>`;
+                    let arr = [];
+                    while(arr.length < mine){
+                        let random_x = Math.floor(Math.random()*side);
+                        let random_y = Math.floor(Math.random()*side);
+                        if (!arr.some(a => a[0] === random_y && a[1] === random_x)) arr.push([random_y,random_x]);
+                    }
+                    mines = new Array(side);
+                    for (let i = 0; i < side; i++) mines[i] = new Array(side).fill(0);
+                    for (let i = 0; i < side; i++) {
+                        for (let j = 0; j < side; j++) {
+                            let num = 0;
+                            for (let a of arr) {
+                                if (a[0] === i && a[1] === j) {num = 1;break;}
+                            }
+                            mines[i][j] = num;
+                        }
+                    }
+                    flags = new Array(side);
+                    opens = new Array(side);
+                    for (let i = 0; i < side; i++) {
+                        flags[i] = new Array(side).fill(0);
+                        opens[i] = new Array(side).fill(0);
+                    }
+                    time = 0;
+                    clearInterval(timerID);
+                    timerID = setInterval(() => {
+                        time++;
+                        hour = Math.floor(time/3600);
+                        min = Math.floor((time-hour*3600)/60);
+                        sec = time-hour*3600-min*60;
+                        document.getElementById("hour").textContent = hour;
+                        document.getElementById("min").textContent = min;
+                        document.getElementById("sec").textContent = sec;
+                    }, 1000);
+                }else if (sum === 1) {
+                    document.getElementById("buttons").innerHTML = `<p>Enter your nickname</p><p><input id="input" type="text" maxlength="12" oninput="input()"><button id="button" onclick="send()" class="empty">Send</button></p>`;
+                }else if (sum === 2) {
+                    (async () => {
+                        document.getElementById("buttons").innerHTML = `Loading...`;
+                        const q = window.query(window.collection(window.db, "ranking"), window.orderBy("score", "desc"), window.limit(20));
+                        const snap = await window.getDocs(q);
+                        let data = [];
+                        snap.forEach(doc => {
+                            data.push(doc.data());
+                        });
+                        if (data.length > 0) {
+                            data.sort((a,b) => b.score - a.score);
+                            let map = {};
+                            for (let r of data) {
+                                if (!map[r.name] || map[r.name].score < r.score) {
+                                    map[r.name] = r;
+                                }
+                            }
+                            data = Object.values(map);
+                        }
+                        let html = `<h2>RANKING</h2><p><button onclick="start(0)">Back</button></p><ul>`;
+                        for (let i = 0; i < data.length; i++) {
+                            html += `<li>${i+1}.${data[i].name} - ${data[i].score}</li>`;
+                        }
+                        html += `</ul>`;
+                        document.getElementById("buttons").innerHTML = html;
+                        boards.innerHTML = "";
+                    })();
+                }
+            }
+
+            function input() {
+                name = document.getElementById("input").value;
+                document.getElementById("input").classList.remove("empty");
+                if (name.length === 0) document.getElementById("button").classList.add("empty");
+            }
+
+            function send() {
+                if (name.length === 0) return;
+                sendScore();
+                start(2);
+            }
+
+            function setopen() {
+                if (ended) return;
+                mode = "open";
+                document.getElementById("btnflag").classList.remove("on");
+                document.getElementById("btnopen").classList.remove("on");
+                document.getElementById("btnopen").classList.add("on");
+            }
+
+            function setflag() {
+                if (ended) return;
+                mode = "flag";
+                document.getElementById("btnflag").classList.remove("on");
+                document.getElementById("btnopen").classList.remove("on");
+                document.getElementById("btnflag").classList.add("on");
+            }
+
+            function setUpClickEvents(id) {
+                let tx = id%side;
+                let ty = Math.floor(id/side);
+                if (ended) return;
+                if (mode === "open") openCell(tx,ty);
+                else flagCell(tx,ty);
+                let num = 0;
+                for (let i = 0; i < side; i++) {
+                    for (let j = 0; j < side; j++) {
+                        if (opens[i][j] === 1) num++;
+                    }
+                }
+                if (num === side**2-mine) {
+                    ended = true;
+                    clearInterval(timerID);
+                    document.getElementById("centerMessage").innerHTML = `CLEAR!`;
+                    score = side * side * 10 - time * 2;
+                    score = Math.max(score,50);
+                    score *= 20;
+                    setTimeout(() => {
+                        document.getElementById("board").innerHTML = ``;
+                        document.getElementById("buttons").innerHTML = `<p>SCORE: ${score}</p><p>Send this score to the leaderboard?</p><p><button 
+                        onclick="start(1)">Yes</button> <button onclick="start(0)">No</button></p>`;
+                    },2000);
+                }
+            }
+
+            function openCell(tx,ty) {
+                if (opens[ty][tx] === 1) return;
+                if (flags[ty][tx] === 1) return;
+                if (mines[ty][tx] === 1) {
+                    ended = true;
+                    clearInterval(timerID);
+                    document.getElementById(ty*side+tx).classList.add("mine");
+                    document.getElementById("centerMessage").innerHTML = `GAME OVER!`;
+                    return;
+                }
+                opens[ty][tx] = 1;
+                let num = 0;
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        if (i === 0 && j === 0) continue;
+                        let x = tx+j;
+                        let y = ty+i;
+                        if (x < 0 || y < 0 || x >= side || y >= side) continue;
+                        if (mines[y][x] === 1) num++;
+                    }
+                }
+                document.getElementById(ty*side+tx).textContent = num === 0? "." : num;
+                document.getElementById(ty*side+tx).classList.add("open");
+            }
+
+            function flagCell(tx,ty) {
+                if (opens[ty][tx] === 1) return;
+                if (flags[ty][tx] === 0) {
+                    flags[ty][tx] = 1;
+                    document.getElementById(ty*side+tx).classList.add("flag");
+                }else {
+                    flags[ty][tx] = 0;
+                    document.getElementById(ty*side+tx).classList.remove("flag");
+                }
+            }
+
+            async function sendScore() {
+                if (!name || score === 0) return;
+                await window.addDoc(window.collection(window.db, "ranking"), {
+                    name: name,
+                    score: score
+                });
+            }
+        </script>
+        <script type="module">
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+            import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+            const firebaseConfig = {
+                apiKey: "AIzaSyCvZNPoQ4FmqBlLnHu35FwfSybHkjzCupI",
+                authDomain: "minesweeper-ranking-49ab6.firebaseapp.com",
+                projectId: "minesweeper-ranking-49ab6",
+                storageBucket: "minesweeper-ranking-49ab6.firebasestorage.app",
+                messagingSenderId: "228232689562",
+                appId: "1:228232689562:web:c60c7ed0b817fd742b6c23"
+            };
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+
+            window.db = getFirestore(app);
+            window.addDoc = addDoc;
+            window.collection = collection;
+            window.getDocs = getDocs;
+            window.query = query;
+            window.orderBy = orderBy;
+            window.limit = limit;
+        </script>
+    </body>
+</html>
