@@ -53,8 +53,8 @@ button:active {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    position: relative;
-    overflow: auto;
+    overflow-x: auto;
+    overflow-y: auto;
 }
 table {
     border-collapse: collapse;
@@ -62,10 +62,11 @@ table {
     box-shadow: 0 0 30px rgba(0,0,0,0.7);
     border: 2px solid #374151;
     margin: 10px;
+    min-width: max-content;
 }
 td {
-    width: calc(min(9vw, 38px));
-    height: calc(min(9vw, 38px));
+    width: 32px;
+    height: 32px;
     border: 1px solid #1f2937;
     text-align: center;
     vertical-align: middle;
