@@ -86,7 +86,7 @@ td.open {
 .flag::before {
     content: "🚩";
 }
-.mine {
+.mine::before {
     content: "⚡️";
 }
 .center-message {
@@ -254,7 +254,7 @@ input:focus {
                 }else if (sum === 2) {
                     (async () => {
                         document.getElementById("buttons").innerHTML = `Loading...`;
-                        const q = window.query(window.collection(window.db, "ranking"), window.orderBy("score", "desc"), window.limit(20));
+                        const q = window.query(window.collection(window.db, "ranking"), window.orderBy("score", "desc"), window.limit(15));
                         const snap = await window.getDocs(q);
                         let data = [];
                         snap.forEach(doc => {
@@ -287,9 +287,15 @@ input:focus {
                 if (name.length === 0) document.getElementById("button").classList.add("empty");
             }
 
-            function send() {
-                if (name.length === 0) return;
-                sendScore();
+            async function send() {
+                console.log("send押された");
+                console.log("name:", name);
+                console.log("db:", window.db);
+                if (name.length === 0) {
+                    alert("名前が空");
+                    return;
+                }
+                await sendScore();
                 start(2);
             }
 
@@ -374,10 +380,18 @@ input:focus {
 
             async function sendScore() {
                 if (!name || score === 0) return;
-                await window.addDoc(window.collection(window.db, "ranking"), {
-                    name: name,
-                    score: score
-                });
+                console.log("送信開始")
+                try {
+                    await window.addDoc(window.collection(window.db, "ranking"), {
+                        name: name,
+                        score: score
+                    });
+                    console.log("保存成功");
+                } catch (e) {
+                    console.error("保存失敗:", e);
+                    alert("保存失敗: " + e.message);
+                }
+                console.log("送信終了");
             }
         </script>
         <script type="module">
@@ -394,7 +408,7 @@ input:focus {
             const app = initializeApp(firebaseConfig);
             const db = getFirestore(app);
 
-            window.db = getFirestore(app);
+            window.db = db;
             window.addDoc = addDoc;
             window.collection = collection;
             window.getDocs = getDocs;
