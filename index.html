@@ -16,7 +16,7 @@ html, body {
     overflow-x: hidden;
 }
 .appframe {
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
@@ -52,14 +52,16 @@ button:active {
     flex: 1;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     position: relative;
+    overflow: auto;
 }
 table {
     border-collapse: collapse;
     background: #0b1220;
     box-shadow: 0 0 30px rgba(0,0,0,0.7);
     border: 2px solid #374151;
+    margin: 10px;
 }
 td {
     width: calc(min(9vw, 38px));
